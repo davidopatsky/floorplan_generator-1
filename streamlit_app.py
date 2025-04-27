@@ -1,47 +1,53 @@
 import streamlit as st
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
-# Funkce pro generování výkresu
-def draw_dimensioned_rectangle(width, depth):
-    fig, ax = plt.subplots(figsize=(8.3, 11.7))  # A4 formát
+# Definice obdélníku a výchozích anotací
+obdelnik = {"sirka": 4000, "vyska": 3000}
+anotace = {
+    "Šířka": {"x": 2000, "y": -200, "text": "4000 mm", "rotation": 0},
+    "Výška": {"x": -200, "y": 1500, "text": "3000 mm", "rotation": 90},
+}
 
-    # Vykreslení obdélníku
-    ax.plot([0, width, width, 0, 0], [0, 0, depth, depth, 0], 'k-', linewidth=2)
+def vykresli_obdelnik_s_kotami(obdelnik, anotace):
+    fig, ax = plt.subplots(figsize=(8, 6))
     
-    # Kóta pro šířku (šířka)
-    ax.annotate(f'{width} mm', xy=(width / 2, -200), ha='center', va='top', fontsize=10,
-                arrowprops=dict(arrowstyle='<->', lw=1))  # Šipka pro šířku
+    # Vykreslení obdélníku
+    rect = patches.Rectangle((0, 0), obdelnik['sirka'], obdelnik['vyska'],
+                              linewidth=2, edgecolor='black', facecolor='none')
+    ax.add_patch(rect)
 
-    # Kóta pro hloubku (výška)
-    ax.annotate(f'{depth} mm', xy=(-200, depth / 2), ha='right', va='center', rotation=90, fontsize=10,
-                arrowprops=dict(arrowstyle='<->', lw=1))  # Šipka pro hloubku
-
-    # Kótovací čáry pro levý a pravý okraj
-    ax.plot([0, 0], [0, depth], 'k--', lw=0.5)  # Levá kótu
-    ax.plot([width, width], [0, depth], 'k--', lw=0.5)  # Pravá kótu
-
-    # Kótovací čáry pro spodní a horní okraj
-    ax.plot([0, width], [0, 0], 'k--', lw=0.5)  # Spodní kótu
-    ax.plot([0, width], [depth, depth], 'k--', lw=0.5)  # Horní kótu
-
-    # Středové osy (pro sloupky)
-    ax.plot([width / 2, width / 2], [0, depth], 'r--', lw=0.5)  # Středová osa pro šířku
-    ax.plot([0, width], [depth / 2, depth / 2], 'r--', lw=0.5)  # Středová osa pro hloubku
-
-    # Nastavení grafu
+    # Kótovací šipky a texty
+    for nazev, info in anotace.items():
+        ax.annotate(
+            '', xy=(0, info['y']) if nazev == "Výška" else (info['x'], 0),
+            xytext=(obdelnik['sirka'], info['y']) if nazev == "Šířka" else (info['x'], obdelnik['vyska']),
+            arrowprops=dict(arrowstyle='<->', lw=1.5, color='blue')
+        )
+        ax.text(info['x'], info['y'], info['text'], 
+                ha='center', va='center', fontsize=12, color='blue', rotation=info['rotation'])
+    
+    # Nastavení vzhledu
+    ax.set_xlim(-500, obdelnik['sirka'] + 500)
+    ax.set_ylim(-500, obdelnik['vyska'] + 500)
     ax.set_aspect('equal')
     ax.axis('off')
 
-    # Zobrazení grafu ve Streamlit
+    return fig
+
+def main():
+    st.title("Interaktivní obdélník s editací kót")
+
+    # Výběr anotace
+    selected_anotace = st.selectbox("Vyberte kótu k editaci:", list(anotace.keys()))
+    nova_hodnota = st.text_input("Nová hodnota:", value=anotace[selected_anotace]['text'])
+
+    # Aktualizace hodnoty
+    anotace[selected_anotace]['text'] = nova_hodnota
+
+    # Vykreslení
+    fig = vykresli_obdelnik_s_kotami(obdelnik, anotace)
     st.pyplot(fig)
 
-# Aplikace Streamlit
-st.title('Generátor výkresu s evropskými kótami')
-
-# Uživatelské vstupy
-width = st.number_input('Šířka (mm)', min_value=1000, value=5000)
-depth = st.number_input('Hloubka (mm)', min_value=1000, value=3000)
-
-# Tlačítko pro generování výkresu
-if st.button('Generovat výkres'):
-    draw_dimensioned_rectangle(width, depth)
+if __name__ == "__main__":
+    main()
