@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import math
 import io
+import numpy as np
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 
@@ -58,7 +59,7 @@ fig = vykresli_obdelnik_s_kotami(obdelnik, anotace)
 buf = io.BytesIO()
 fig.savefig(buf, format="png")
 buf.seek(0)
-background_image = Image.open(buf)
+background_image = np.array(Image.open(buf))
 
 st.header("Klikni na kótu pro úpravu:")
 
