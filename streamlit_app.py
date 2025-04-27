@@ -1,4 +1,5 @@
 import streamlit as st
+import io
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from streamlit_drawable_canvas import st_canvas
