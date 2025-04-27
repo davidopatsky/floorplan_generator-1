@@ -1,95 +1,53 @@
-import tkinter as tk
-from tkinter import messagebox
+import streamlit as st
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.patches as patches
 
-# Funkce pro generování výkresu
-def generate_floorplan(width, depth, num_columns_width, num_columns_depth):
-    fig, ax = plt.subplots(figsize=(8.3, 11.7))  # Formát A4
+# Definice obdélníku a výchozích anotací
+obdelnik = {"sirka": 4000, "vyska": 3000}
+anotace = {
+    "Šířka": {"x": 2000, "y": -200, "text": "4000 mm", "rotation": 0},
+    "Výška": {"x": -200, "y": 1500, "text": "3000 mm", "rotation": 90},
+}
 
-    # Vykreslení obdélníku
-    ax.plot([0, width, width, 0, 0], [0, 0, depth, depth, 0], 'k-', linewidth=2)
+def vykresli_obdelnik_s_kotami(obdelnik, anotace):
+    fig, ax = plt.subplots(figsize=(8, 6))
     
-    # Parametry sloupků
-    column_size = 120  # Velikost sloupku (120x120 mm)
-    offset = 60  # Střed sloupku je 60 mm uvnitř tvaru (zarovnáno vnější hranou obdélníku)
+    # Vykreslení obdélníku
+    rect = patches.Rectangle((0, 0), obdelnik['sirka'], obdelnik['vyska'],
+                              linewidth=2, edgecolor='black', facecolor='none')
+    ax.add_patch(rect)
 
-    # Vypočítání pozic sloupků
-    col_x_positions = [i * (width / (num_columns_width + 1)) - offset for i in range(1, num_columns_width + 1)]
-    col_y_positions = [i * (depth / (num_columns_depth + 1)) - offset for i in range(1, num_columns_depth + 1)]
-
-    # Vykreslení sloupků (červené tečky)
-    for x in col_x_positions:
-        for y in col_y_positions:
-            ax.plot(x, y, 'ro', markersize=5)  # Sloupek
-
-    # Kóty - Celkový rozměr
-    ax.annotate(f'{width} mm', xy=(width / 2, -200), ha='center', va='top', fontsize=10, arrowprops=dict(arrowstyle='<->'))
-    ax.annotate(f'{depth} mm', xy=(-200, depth / 2), ha='right', va='center', rotation=90, fontsize=10, arrowprops=dict(arrowstyle='<->'))
-
-    # Kóty - Středové osy sloupků
-    for x in col_x_positions:
-        ax.plot([x, x], [0, depth], 'r--', linewidth=0.5)  # Středová osa sloupku
-    for y in col_y_positions:
-        ax.plot([0, width], [y, y], 'r--', linewidth=0.5)  # Středová osa sloupku
-
-    # Kóty pro střed sloupků
-    for x in col_x_positions:
-        ax.annotate(f'{x + offset} mm', xy=(x, -100), ha='center', va='top', fontsize=8, arrowprops=dict(arrowstyle='<->'))
-    for y in col_y_positions:
-        ax.annotate(f'{y + offset} mm', xy=(-100, y), ha='right', va='center', rotation=90, fontsize=8, arrowprops=dict(arrowstyle='<->'))
-
-    # Nastavení os a zobrazení
+    # Kótovací šipky a texty
+    for nazev, info in anotace.items():
+        ax.annotate(
+            '', xy=(0, info['y']) if nazev == "Výška" else (info['x'], 0),
+            xytext=(obdelnik['sirka'], info['y']) if nazev == "Šířka" else (info['x'], obdelnik['vyska']),
+            arrowprops=dict(arrowstyle='<->', lw=1.5, color='blue')
+        )
+        ax.text(info['x'], info['y'], info['text'], 
+                ha='center', va='center', fontsize=12, color='blue', rotation=info['rotation'])
+    
+    # Nastavení vzhledu
+    ax.set_xlim(-500, obdelnik['sirka'] + 500)
+    ax.set_ylim(-500, obdelnik['vyska'] + 500)
     ax.set_aspect('equal')
     ax.axis('off')
 
-    # Uložení do PDF
-    with PdfPages('floorplan.pdf') as pdf:
-        pdf.savefig(fig, bbox_inches='tight')
-    plt.close(fig)
+    return fig
 
-    # Zpráva o dokončení
-    messagebox.showinfo("Úspěch", "Výkres byl úspěšně vygenerován a uložen jako 'floorplan.pdf'.")
+def main():
+    st.title("Interaktivní obdélník s editací kót")
 
-# Funkce pro zpracování formuláře
-def generate():
-    try:
-        width = int(entry_width.get())
-        depth = int(entry_depth.get())
-        num_columns_width = int(entry_num_columns_width.get())
-        num_columns_depth = int(entry_num_columns_depth.get())
-        
-        # Zavolání funkce pro generování výkresu
-        generate_floorplan(width, depth, num_columns_width, num_columns_depth)
-    except ValueError:
-        messagebox.showerror("Chyba", "Zadejte prosím platná čísla!")
+    # Výběr anotace
+    selected_anotace = st.selectbox("Vyberte kótu k editaci:", list(anotace.keys()))
+    nova_hodnota = st.text_input("Nová hodnota:", value=anotace[selected_anotace]['text'])
 
-# Vytvoření hlavního okna
-root = tk.Tk()
-root.title("Generátor půdorysu")
+    # Aktualizace hodnoty
+    anotace[selected_anotace]['text'] = nova_hodnota
 
-# Vytvoření vstupních polí
-tk.Label(root, text="Šířka (mm):").grid(row=0, column=0)
-entry_width = tk.Entry(root)
-entry_width.grid(row=0, column=1)
+    # Vykreslení
+    fig = vykresli_obdelnik_s_kotami(obdelnik, anotace)
+    st.pyplot(fig)
 
-tk.Label(root, text="Hloubka (mm):").grid(row=1, column=0)
-entry_depth = tk.Entry(root)
-entry_depth.grid(row=1, column=1)
-
-tk.Label(root, text="Počet sloupků po šířce:").grid(row=2, column=0)
-entry_num_columns_width = tk.Entry(root)
-entry_num_columns_width.grid(row=2, column=1)
-
-tk.Label(root, text="Počet sloupků po hloubce:").grid(row=3, column=0)
-entry_num_columns_depth = tk.Entry(root)
-entry_num_columns_depth.grid(row=3, column=1)
-
-# Tlačítko pro generování výkresu
-generate_button = tk.Button(root, text="Generovat výkres", command=generate)
-generate_button.grid(row=4, columnspan=2)
-
-# Spuštění aplikace
-root.mainloop()
-
-
+if __name__ == "__main__":
+    main()
