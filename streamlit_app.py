@@ -1,5 +1,4 @@
-import tkinter as tk
-from tkinter import messagebox
+import streamlit as st
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -48,46 +47,23 @@ def generate_floorplan(width, depth, num_columns_width, num_columns_depth):
         pdf.savefig(fig, bbox_inches='tight')
     plt.close(fig)
 
-    # Zpráva o dokončení
-    messagebox.showinfo("Úspěch", "Výkres byl úspěšně vygenerován a uložen jako 'floorplan.pdf'.")
+    return 'floorplan.pdf'
 
-# Funkce pro zpracování formuláře
-def generate():
-    try:
-        width = int(entry_width.get())
-        depth = int(entry_depth.get())
-        num_columns_width = int(entry_num_columns_width.get())
-        num_columns_depth = int(entry_num_columns_depth.get())
-        
-        # Zavolání funkce pro generování výkresu
-        generate_floorplan(width, depth, num_columns_width, num_columns_depth)
-    except ValueError:
-        messagebox.showerror("Chyba", "Zadejte prosím platná čísla!")
+# Aplikace Streamlit
+st.title('Generátor půdorysu s obdélníkem a sloupky')
 
-# Vytvoření hlavního okna
-root = tk.Tk()
-root.title("Generátor půdorysu")
-
-# Vytvoření vstupních polí
-tk.Label(root, text="Šířka (mm):").grid(row=0, column=0)
-entry_width = tk.Entry(root)
-entry_width.grid(row=0, column=1)
-
-tk.Label(root, text="Hloubka (mm):").grid(row=1, column=0)
-entry_depth = tk.Entry(root)
-entry_depth.grid(row=1, column=1)
-
-tk.Label(root, text="Počet sloupků po šířce:").grid(row=2, column=0)
-entry_num_columns_width = tk.Entry(root)
-entry_num_columns_width.grid(row=2, column=1)
-
-tk.Label(root, text="Počet sloupků po hloubce:").grid(row=3, column=0)
-entry_num_columns_depth = tk.Entry(root)
-entry_num_columns_depth.grid(row=3, column=1)
+# Uživatelské vstupy
+width = st.number_input('Šířka (mm)', min_value=1000, value=5000)
+depth = st.number_input('Hloubka (mm)', min_value=1000, value=3000)
+num_columns_width = st.number_input('Počet sloupků po šířce', min_value=1, value=3)
+num_columns_depth = st.number_input('Počet sloupků po hloubce', min_value=1, value=2)
 
 # Tlačítko pro generování výkresu
-generate_button = tk.Button(root, text="Generovat výkres", command=generate)
-generate_button.grid(row=4, columnspan=2)
+if st.button('Generovat výkres'):
+    pdf_path = generate_floorplan(width, depth, num_columns_width, num_columns_depth)
+    st.success("Výkres byl úspěšně vygenerován.")
+    
+    # Nabídka pro stažení PDF
+    with open(pdf_path, 'rb') as f:
+        st.download_button('Stáhnout PDF', f, file_name='floorplan.pdf')
 
-# Spuštění aplikace
-root.mainloop()
