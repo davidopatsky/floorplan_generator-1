@@ -2,9 +2,6 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import math
-import io
-import numpy as np
-from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 
 # Výchozí obdélník
@@ -16,8 +13,7 @@ anotace = {
     "Výška": {"x": -150, "y": 1500, "text": "3000 mm", "rotation": 90},
 }
 
-def vykresli_obdelnik_s_kotami(obdelnik, anotace, selected=None):
-    fig, ax = plt.subplots(figsize=(8, 6))
+def vykresli_obdelnik_s_kotami(ax, obdelnik, anotace, selected=None):
     rect = patches.Rectangle((0, 0), obdelnik['sirka'], obdelnik['vyska'],
                               linewidth=2, edgecolor='black', facecolor='none')
     ax.add_patch(rect)
@@ -36,7 +32,6 @@ def vykresli_obdelnik_s_kotami(obdelnik, anotace, selected=None):
     ax.set_ylim(-500, obdelnik['vyska'] + 500)
     ax.set_aspect('equal')
     ax.axis('off')
-    return fig
 
 def najdi_nejblizsi_anotaci(anotace, klik_x, klik_y):
     nejblizsi = None
@@ -49,27 +44,20 @@ def najdi_nejblizsi_anotaci(anotace, klik_x, klik_y):
     return nejblizsi
 
 st.set_page_config(layout="wide")
-st.title("Interaktivní editace kót kliknutím")
+st.title("Testovací verze - klikání na anotace")
 
 st.header("Nastavení obdélníku")
-obdelnik['sirka'] = st.number_input('Šířka obdélníku (mm)', min_value=500, max_value=10000, value=4000)
-obdelnik['vyska'] = st.number_input('Výška obdélníku (mm)', min_value=500, max_value=10000, value=3000)
+obdelnik['sirka'] = st.number_input('Šířka (mm)', min_value=500, max_value=10000, value=4000)
+obdelnik['vyska'] = st.number_input('Výška (mm)', min_value=500, max_value=10000, value=3000)
 
-fig = vykresli_obdelnik_s_kotami(obdelnik, anotace)
-buf = io.BytesIO()
-fig.savefig(buf, format="png")
-buf.seek(0)
-background_image = np.array(Image.open(buf))
-
-st.header("Klikni na kótu pro úpravu:")
-
+# Canvas bez pozadí
 canvas_result = st_canvas(
     fill_color="rgba(255, 165, 0, 0.3)",
-    background_image=background_image,
     update_streamlit=True,
-    height=700,
-    width=1000,
+    height=800,
+    width=1200,
     drawing_mode="transform",
+    background_color="white",
     key="canvas",
 )
 
@@ -79,11 +67,13 @@ if canvas_result.json_data is not None:
         posledni_klik = canvas_result.json_data["objects"][-1]
         klik_x = posledni_klik["left"]
         klik_y = posledni_klik["top"]
-        selected = najdi_nejblizsi_anotaci(anotace, klik_x, 700 - klik_y)
+        selected = najdi_nejblizsi_anotaci(anotace, klik_x, 800 - klik_y)  # invertujeme Y osu
+
+fig, ax = plt.subplots(figsize=(10, 8))
+vykresli_obdelnik_s_kotami(ax, obdelnik, anotace, selected)
+st.pyplot(fig)
 
 if selected:
     st.success(f"Vybrána anotace: {selected}")
     nova_hodnota = st.text_input(f"Zadejte novou hodnotu pro '{selected}':", value=anotace[selected]['text'])
     anotace[selected]['text'] = nova_hodnota
-    fig = vykresli_obdelnik_s_kotami(obdelnik, anotace, selected)
-    st.pyplot(fig)
