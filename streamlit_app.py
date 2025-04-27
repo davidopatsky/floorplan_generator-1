@@ -3,22 +3,24 @@ import matplotlib.pyplot as plt
 
 # Funkce pro generování výkresu
 def draw_dimensioned_rectangle(width, depth):
-    fig, ax = plt.subplots(figsize=(8.3, 11.7))  # Formát A4
+    fig, ax = plt.subplots(figsize=(8.3, 11.7))  # A4 formát
 
     # Vykreslení obdélníku
     ax.plot([0, width, width, 0, 0], [0, 0, depth, depth, 0], 'k-', linewidth=2)
     
-    # Vykreslení kót pro šířku (šířka)
+    # Kóta pro šířku (šířka)
     ax.annotate(f'{width} mm', xy=(width / 2, -200), ha='center', va='top', fontsize=10,
                 arrowprops=dict(arrowstyle='<->', lw=1))  # Šipka pro šířku
 
-    # Vykreslení kót pro hloubku (výška)
+    # Kóta pro hloubku (výška)
     ax.annotate(f'{depth} mm', xy=(-200, depth / 2), ha='right', va='center', rotation=90, fontsize=10,
                 arrowprops=dict(arrowstyle='<->', lw=1))  # Šipka pro hloubku
 
-    # Kótovací čáry
+    # Kótovací čáry pro levý a pravý okraj
     ax.plot([0, 0], [0, depth], 'k--', lw=0.5)  # Levá kótu
     ax.plot([width, width], [0, depth], 'k--', lw=0.5)  # Pravá kótu
+
+    # Kótovací čáry pro spodní a horní okraj
     ax.plot([0, width], [0, 0], 'k--', lw=0.5)  # Spodní kótu
     ax.plot([0, width], [depth, depth], 'k--', lw=0.5)  # Horní kótu
 
@@ -30,7 +32,7 @@ def draw_dimensioned_rectangle(width, depth):
     ax.set_aspect('equal')
     ax.axis('off')
 
-    # Zobrazení grafu
+    # Zobrazení grafu ve Streamlit
     st.pyplot(fig)
 
 # Aplikace Streamlit
